@@ -22,7 +22,7 @@ s3 = boto3.client("s3")
 
 TABLE_NAME = os.environ["TABLE_NAME"]
 LOG_BUCKET = os.environ["LOG_BUCKET"]
-CODE_LENGTH = 6
+CODE_LENGTH = 8
 
 table = ddb.Table(TABLE_NAME)
 
