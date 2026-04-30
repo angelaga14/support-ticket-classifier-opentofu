@@ -25,7 +25,7 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
 # Permisos a DynamoDB y S3 (solo lo necesario)
 data "aws_iam_policy_document" "lambda_data_access" {
   statement {
-    sid     = "DynamoDBReadWrite"
+    sid = "DynamoDBReadWrite"
     actions = [
       "dynamodb:GetItem",
       "dynamodb:PutItem",
@@ -35,8 +35,8 @@ data "aws_iam_policy_document" "lambda_data_access" {
   }
 
   statement {
-    sid     = "S3WriteLogs"
-    actions = ["s3:PutObject"]
+    sid       = "S3WriteLogs"
+    actions   = ["s3:PutObject"]
     resources = ["${aws_s3_bucket.logs.arn}/*"]
   }
 }

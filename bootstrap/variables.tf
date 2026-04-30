@@ -21,5 +21,5 @@ variable "github_repo" {
   type        = string
   description = "Repo de GitHub que puede asumir el rol. Formato: 'owner/repo'."
   # CAMBIA esto antes del primer apply.
-  default     = "agusvillarreal/demo-cicd-tofu"
+  default = "agusvillarreal/demo-cicd-tofu"
 }
