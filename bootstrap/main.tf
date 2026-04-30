@@ -78,15 +78,19 @@ resource "aws_dynamodb_table" "locks" {
 
 # Si ya existe en la cuenta (creado por otro proyecto), comenta esto y
 # usa data "aws_iam_openid_connect_provider" en su lugar.
-resource "aws_iam_openid_connect_provider" "github" {
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  # Thumbprints publicos de GitHub. Han cambiado historicamente; AWS
-  # recomienda incluirlos pero la verificacion la hace por chain ahora.
-  thumbprint_list = [
-    "6938fd4d98bab03faadb97b34396831e3780aea1",
-    "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
-  ]
+# resource "aws_iam_openid_connect_provider" "github" {
+#   url             = "https://token.actions.githubusercontent.com"
+#   client_id_list  = ["sts.amazonaws.com"]
+#   # Thumbprints publicos de GitHub. Han cambiado historicamente; AWS
+#   # recomienda incluirlos pero la verificacion la hace por chain ahora.
+#   thumbprint_list = [
+#     "6938fd4d98bab03faadb97b34396831e3780aea1",
+#     "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
+#   ]
+# }
+
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
 }
 
 # -----------------------------------------------------------------------------
@@ -102,7 +106,7 @@ data "aws_iam_policy_document" "gha_assume" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github.arn]
+      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
     }
 
     # Audience claim: literal de GitHub OIDC
