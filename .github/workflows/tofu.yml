@@ -1,0 +1,64 @@
+name: OpenTofu
+
+# El patron canonico:
+#   - Pull request a main  -> tofu plan (sin apply, solo verifica)
+#   - Push a main          -> tofu plan + tofu apply
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Permisos minimos:
+#   - id-token: write   -> necesario para OIDC
+#   - contents: read    -> necesario para checkout
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TOFU_VERSION: "1.8.5"
+  AWS_REGION: "us-east-1"
+  # CAMBIA esto: pega el output gha_role_arn del bootstrap.
+  AWS_ROLE: "arn:aws:iam::CAMBIAME:role/demo-cicd-tofu-gha"
+
+jobs:
+  tofu:
+    name: ${{ github.event_name == 'pull_request' && 'plan' || 'apply' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Asume el rol via OIDC. Sin access keys, sin secrets.
+      # GitHub firma un token JWT que AWS verifica contra el OIDC
+      # provider que creamos en el bootstrap.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: gha-${{ github.run_id }}
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: tofu fmt
+        run: tofu fmt -check -recursive
+
+      - name: tofu init
+        run: tofu init
+
+      - name: tofu validate
+        run: tofu validate
+
+      - name: tofu plan
+        run: tofu plan -no-color -out=tfplan
+
+      # Solo aplicamos en push a main (no en PRs).
+      # En PRs, el plan corre y nada mas.
+      - name: tofu apply
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: tofu apply -no-color -auto-approve tfplan

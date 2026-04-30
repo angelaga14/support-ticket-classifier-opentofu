@@ -1,0 +1,25 @@
+# OpenTofu / Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfvars
+!*.tfvars.example
+
+# IMPORTANTE: el state local del bootstrap SI debe versionarse en algunos
+# proyectos para que el equipo pueda destruirlo. Para esta demo lo dejamos
+# fuera por simplicidad. Si lo quieres, descomenta:
+# !bootstrap/terraform.tfstate
+
+# Build artifacts
+.build/
+*.zip
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
