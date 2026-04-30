@@ -21,7 +21,7 @@ env:
   TOFU_VERSION: "1.8.5"
   AWS_REGION: "us-east-1"
   # CAMBIA esto: pega el output gha_role_arn del bootstrap.
-  AWS_ROLE: "arn:aws:iam::CAMBIAME:role/demo-cicd-tofu-gha"
+  AWS_ROLE: "arn:aws:iam::882692629600:role/demo-cicd-tofu-gha"
 
 jobs:
   tofu:
