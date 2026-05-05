@@ -1,122 +1,45 @@
-# Demo CI/CD con OpenTofu y GitHub Actions
+# Support Ticket Classifier Pipeline (OpenTofu + AWS)
 
-URL Shortener mínimo desplegado vía GitHub Actions con OIDC (sin access keys).
+## Descripción
+
+Este proyecto implementa una pipeline serverless en AWS para el procesamiento automático de tickets de soporte. El objetivo es simular un sistema de clasificación de tickets que determina su nivel de urgencia y los organiza en almacenamiento según su severidad.
+
+La infraestructura está definida completamente como código utilizando OpenTofu, y el despliegue se realiza sin intervención manual mediante prácticas de infraestructura reproducible.
 
 ## Arquitectura
 
-```
-   POST /shorten         GET /{code}
-        │                     │
-        └──────┬──────────────┘
-               │
-        ┌──────▼───────┐
-        │ API Gateway  │  HTTP API
-        └──────┬───────┘
-               │
-        ┌──────▼───────┐
-        │   Lambda     │  Python 3.12
-        └──┬────────┬──┘
-           │        │
-    ┌──────▼──┐ ┌──▼──────────┐
-    │DynamoDB │ │  S3 logs    │
-    │ (urls)  │ │ (analytics) │
-    └─────────┘ └─────────────┘
-```
+La solución está compuesta por los siguientes elementos:
 
-## Flujo CI/CD
+- 3 funciones AWS Lambda:
+  - **validate_ticket**: valida la estructura y contenido del ticket.
+  - **classify_ticket**: determina la severidad del ticket (urgent, normal, low).
+  - **route_ticket**: almacena el resultado en un bucket de S3 según su clasificación.
 
-```
-┌──────────────────────┐
-│ Pull request -> main │ ──> tofu plan (solo)
-└──────────────────────┘
+- AWS Step Functions:
+  - Orquesta el flujo de ejecución entre las tres Lambdas.
+  - Incluye un estado **Choice** que evalúa la severidad del ticket.
+  - Contiene estados de éxito (**Succeed**) y fallo (**Fail**).
 
-┌──────────────────────┐
-│ Push -> main         │ ──> tofu plan + tofu apply
-└──────────────────────┘
-```
+- Amazon S3:
+  - Almacena los tickets procesados en carpetas según su severidad:
+    - `urgent/`
+    - `normal/`
+    - `low/`
 
-GitHub Actions asume un rol IAM en AWS via **OIDC**. Sin access keys, sin secrets.
+## Flujo de ejecución
 
-## Estructura
+1. Se recibe un JSON con información del ticket.
+2. La Lambda `validate_ticket` verifica que los datos sean válidos.
+3. La Lambda `classify_ticket` asigna una severidad basada en reglas.
+4. La Lambda `route_ticket` guarda el ticket en S3.
+5. La Step Function evalúa el resultado y finaliza el flujo.
 
-```
-.
-├── .github/workflows/tofu.yml    # CI/CD pipeline
-├── bootstrap/                     # State backend + OIDC + rol GHA. UNA VEZ.
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   └── README.md
-├── lambda/handler.py              # Codigo Python de la Lambda
-├── backend.tf                     # State remoto en S3
-├── main.tf                        # API GW + Lambda + DDB + S3
-├── iam.tf                         # Rol IAM de la Lambda
-├── variables.tf
-└── outputs.tf
-```
+## Ejemplo de entrada
 
-## Setup completo (primera vez)
-
-### 1. Bootstrap
-
-Esto crea el bucket de state, el OIDC provider y el rol GHA. Solo se hace una vez.
-
-```bash
-cd bootstrap
-# Edita variables.tf: cambia var.github_repo a "tu-usuario/tu-repo"
-tofu init
-tofu apply
-# Anota los outputs: state_bucket y gha_role_arn
-```
-
-### 2. Configurar el proyecto principal
-
-```bash
-cd ..
-
-# Edita backend.tf: pega state_bucket
-# Edita .github/workflows/tofu.yml: pega gha_role_arn como AWS_ROLE
-```
-
-### 3. Subir a GitHub y dejar que el CI/CD haga el resto
-
-```bash
-git init
-git add .
-git commit -m "initial commit"
-git remote add origin git@github.com:tu-usuario/tu-repo.git
-git push -u origin main
-```
-
-GitHub Actions correrá automáticamente: `plan` + `apply`. Verifica en la pestaña Actions del repo.
-
-## Probar la API
-
-```bash
-# Despues de que GHA aplique, busca el output api_url en el log de Actions.
-API="https://abc123.execute-api.us-east-1.amazonaws.com"
-
-# Acortar
-curl -X POST $API/shorten \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://www.uag.mx"}'
-# Respuesta: {"code":"Xz3aB9","short_url":"https://abc123.../Xz3aB9","original_url":"..."}
-
-# Visitar
-curl -L $API/Xz3aB9
-# Sigue el 302 a https://www.uag.mx
-```
-
-## Limpieza
-
-```bash
-# 1. Destruye el proyecto principal (lo puedes hacer via GHA borrando todo,
-#    o localmente):
-tofu destroy
-
-# 2. Si quieres destruir TAMBIEN el bootstrap (state bucket + OIDC + rol):
-cd bootstrap
-# Edita main.tf: cambia force_destroy a true en aws_s3_bucket.state
-tofu apply  # aplica el cambio
-tofu destroy
-```
+```json
+{
+  "ticket_id": "tk-001",
+  "customer": "student@uag.mx",
+  "priority_score": 90,
+  "description": "System is down and not working"
+}
