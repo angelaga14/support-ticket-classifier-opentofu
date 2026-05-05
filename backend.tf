@@ -24,10 +24,10 @@ terraform {
   }
 
   backend "s3" {
-  bucket         = "demo-cicd-tofu-state-fe1704c4"
-  key            = "support-ticket-classifier/terraform.tfstate"
-  region         = "us-east-1"
-  dynamodb_table = "ticket-classifier-angel-bootstrap-locks"
-  encrypt        = true
-}
+    bucket         = "demo-cicd-tofu-state-fe1704c4"
+    key            = "support-ticket-classifier/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "ticket-classifier-angel-bootstrap-locks"
+    encrypt        = true
+  }
 }
