@@ -1,16 +1,21 @@
-# outputs.tf
-
-output "api_url" {
-  description = "URL base del API Gateway. Pruebalo con: curl -X POST $api_url/shorten ..."
-  value       = aws_apigatewayv2_api.api.api_endpoint
+output "ticket_bucket" {
+  description = "S3 bucket where routed tickets are stored"
+  value       = aws_s3_bucket.tickets.bucket
 }
 
-output "table_name" {
-  description = "Nombre de la tabla DynamoDB."
-  value       = aws_dynamodb_table.urls.name
+output "state_machine_arn" {
+  description = "ARN of the Step Functions state machine"
+  value       = aws_sfn_state_machine.ticket_pipeline.arn
 }
 
-output "logs_bucket" {
-  description = "Bucket S3 donde se loggean visitas."
-  value       = aws_s3_bucket.logs.bucket
+output "validate_lambda_name" {
+  value = aws_lambda_function.validate_ticket.function_name
+}
+
+output "classify_lambda_name" {
+  value = aws_lambda_function.classify_ticket.function_name
+}
+
+output "route_lambda_name" {
+  value = aws_lambda_function.route_ticket.function_name
 }
