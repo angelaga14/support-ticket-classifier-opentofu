@@ -43,3 +43,21 @@ La solución está compuesta por los siguientes elementos:
   "priority_score": 90,
   "description": "System is down and not working"
 }
+
+## Despliegue con GitHub Actions
+
+El despliegue se realiza automáticamente al hacer **push a la rama `main`**.
+
+El workflow ejecuta estos pasos:
+
+1. Descarga el código del repositorio.  
+2. Se autentica en AWS usando **OIDC** (sin access keys).  
+3. Instala OpenTofu.  
+4. Ejecuta:
+   - `tofu fmt`
+   - `tofu init`
+   - `tofu validate`
+   - `tofu plan`
+5. Ejecuta `tofu apply` para desplegar la infraestructura.
+
+En pull requests solo se ejecuta `tofu plan`.
